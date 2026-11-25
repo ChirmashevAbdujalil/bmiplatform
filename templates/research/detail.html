@@ -1,0 +1,120 @@
+{% extends "base.html" %}{% load bmi %}
+{% block title %}{{ work.title|truncatechars:40 }}{% endblock %}
+{% block page_title %}Ilmiy ish{% endblock %}
+{% block content %}
+<div class="page-actions">
+  <a href="{% url 'research:list' %}" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i>Ro‘yxatga qaytish</a>
+  <div class="d-flex gap-2">
+    {% if work.file %}<a href="{% url 'research:file' work.pk %}" target="_blank" class="btn btn-light"><i class="bi bi-file-earmark-text me-1"></i>Faylni ochish</a>{% endif %}
+    {% if is_owner and work.status != 'approved' %}
+      <a href="{% url 'research:edit' work.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>{% if work.status == 'returned' %}Tuzatib qayta yuborish{% else %}Tahrirlash{% endif %}</a>
+      <form method="post" action="{% url 'research:delete' work.pk %}">{% csrf_token %}<button class="btn btn-light text-danger" data-confirm="Ilmiy ish o‘chirilsinmi?"><i class="bi bi-trash"></i></button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card mb-4">
+      <div class="card-header justify-content-between"><span><i class="bi bi-journal-richtext"></i> {{ work.get_work_type_display }}</span>
+        <span class="status status-{{ work.status }}">{{ work.get_status_display }}</span></div>
+      <div class="card-body">
+        <h2 class="h5 fw-bold mb-3" style="color:var(--navy-800)">{{ work.title }}</h2>
+        <dl class="info-list">
+          <dt>O‘qituvchi (ilmiy rahbar)</dt><dd><a href="{% url 'accounts:teacher_detail' work.teacher_id %}">{{ work.teacher.full_name }}</a></dd>
+          <dt>Talaba hammualliflar</dt><dd>{% for s in work.students.all %}<a href="{% url 'accounts:student_detail' s.pk %}">{{ s.full_name }}</a>{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd>
+          {% if work.other_authors %}<dt>Boshqa hammualliflar</dt><dd>{{ work.other_authors }}</dd>{% endif %}
+          <dt>Nashr darajasi</dt><dd>{{ work.get_level_display }}</dd>
+          <dt>Jurnal / konferensiya</dt><dd>{{ work.publication|default:"—" }}</dd>
+          <dt>Nashr sanasi</dt><dd>{{ work.publication_date|date:"d.m.Y"|default:"—" }}</dd>
+          {% if work.link %}<dt>Havola</dt><dd><a href="{{ work.link }}" target="_blank" rel="noopener">{{ work.link|truncatechars:60 }}</a></dd>{% endif %}
+          <dt>Yuborilgan</dt><dd>{{ work.submitted_at|date:"d.m.Y H:i" }}{% if work.resubmitted_at %} · qayta: {{ work.resubmitted_at|date:"d.m.Y H:i" }}{% endif %}</dd>
+        </dl>
+        {% if work.annotation %}<hr><div class="small-caps mb-1">Annotatsiya</div><p class="mb-0">{{ work.annotation|linebreaksbr }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-ui-checks-grid"></i> Mezonlar bo‘yicha markazlashgan baholash</div>
+      <div class="table-responsive">
+        <table class="table score-matrix">
+          <thead><tr><th>Mezon</th><th>Maks.</th><th>Kafedra mudiri</th><th>Dekanat</th><th>Ta’lim sifati</th><th>O‘rtacha</th></tr></thead>
+          <tbody>
+            {% for row in matrix %}
+            <tr><td class="small fw-600">{{ row.0.name }}</td><td class="text-muted">{{ row.0.max_score }}</td>
+              <td>{{ row.1|default_if_none:"—" }}</td><td>{{ row.2|default_if_none:"—" }}</td><td>{{ row.3|default_if_none:"—" }}</td>
+              <td class="fw-bold">{{ row.4|default_if_none:"—" }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr style="background:#f6f8fb"><th>Jami</th><th>{{ work.max_total }}</th>
+            {% for r, label, e in evaluations %}<th>{% if e %}{{ e.total }}{% else %}—{% endif %}</th>{% endfor %}
+            <th style="color:var(--navy-800)">{% if work.final_score is not None %}{{ work.final_score }}{% else %}—{% endif %}</th></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    {% if form %}
+    <div class="card mb-4" style="border-color:#d9c690">
+      <div class="card-header justify-content-between"><span><i class="bi bi-pen"></i> Sizning bahoyingiz ({{ my_role_label }})</span>
+        <span class="small">Jami: <strong data-score-total>0</strong> / {{ work.max_total }}</span></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'research:evaluate' work.pk %}">{% csrf_token %}
+          <div class="row g-3">
+            {% for c, field in form.score_fields %}
+            <div class="col-md-6">
+              <label class="form-label">{{ c.name }} <span class="text-muted">(0–{{ c.max_score }})</span></label>
+              {{ field }}
+              {% if c.description %}<div class="form-text">{{ c.description }}</div>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="d-flex gap-3 my-3 flex-wrap">
+            {% for radio in form.decision %}
+            <label class="btn {% if radio.data.value == 'approved' %}btn-outline-success{% else %}btn-outline-danger{% endif %}">
+              <input type="radio" name="decision" value="{{ radio.data.value }}" class="form-check-input me-2" {% if radio.data.selected %}checked{% endif %}>{{ radio.choice_label }}</label>
+            {% endfor %}
+          </div>
+          <label class="form-label">{{ form.comment.label }}</label>
+          {{ form.comment }}
+          <button class="btn btn-primary mt-3"><i class="bi bi-check2-circle me-1"></i>Bahoni saqlash</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card mb-4 text-center">
+      <div class="card-body">
+        <div class="small-caps mb-2">Yakuniy markazlashgan ball</div>
+        <div style="font-size:2.6rem;font-weight:800;color:var(--navy-800);line-height:1">{% if work.final_score is not None %}{{ work.final_score }}{% else %}—{% endif %}</div>
+        <div class="text-muted small mt-1">{{ work.max_total }} balldan · uch tomon bahosining o‘rtachasi</div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-people"></i> Baholovchilar</div>
+      <div class="card-body py-1">
+        {% for r, label, e in evaluations %}
+        <div class="approval-step">
+          <span class="step-icon {% if e.decision == 'approved' %}step-done{% elif e.decision == 'returned' %}step-back{% elif work.status == 'pending' %}step-wait{% else %}step-none{% endif %}">
+            <i class="bi {% if e.decision == 'approved' %}bi-check2{% elif e.decision == 'returned' %}bi-arrow-counterclockwise{% else %}bi-hourglass-split{% endif %}"></i></span>
+          <div class="flex-grow-1"><div class="fw-600 d-flex justify-content-between">{{ label }}{% if e %}<span>{{ e.total }}</span>{% endif %}</div>
+            {% if e %}<div class="small text-muted">{{ e.evaluator.full_name }} · {{ e.created_at|date:"d.m.Y" }}</div>
+              {% if e.comment %}<div class="small mt-1 p-2 rounded-2" style="background:#f6f8fb">“{{ e.comment }}”</div>{% endif %}
+            {% else %}<div class="small text-muted">Baholanmagan</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history"></i> Tarix</div>
+      <div class="card-body"><ul class="timeline">
+        {% for log in logs %}<li><div class="fw-600">{{ log.action }}</div>{% if log.comment %}<div class="text-muted">“{{ log.comment }}”</div>{% endif %}
+          <div class="when">{{ log.user.short_name|default:"Tizim" }} · {{ log.created_at|date:"d.m.Y H:i" }}</div></li>
+        {% empty %}<li class="text-muted">Tarix bo‘sh</li>{% endfor %}
+      </ul></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

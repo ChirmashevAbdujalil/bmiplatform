@@ -1,0 +1,131 @@
+{% extends "base.html" %}{% load bmi static %}
+{% block title %}Statistika{% endblock %}
+{% block page_title %}Statistika va reyting{% endblock %}
+{% block head %}
+<style>
+  .viz-root { --series-1: #257de0; --series-2: #f47230; --st-draft: #8a97a8; --st-pending: #d39012; --st-approved: #1e7b4f; --st-returned: #c4392f;
+    --bar: #1a4d8f; --grid: #edf1f6; --text-secondary: #66768c; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="viz-root">
+<form class="filter-bar" method="get">
+  <div class="row g-2 align-items-end">
+    {% include "partials/structure_filters.html" with no_direction=True %}
+    {% if years %}<div class="col-6 col-md-3 col-xl-2"><label class="form-label">O‘quv yili (BMI)</label>
+      <select name="year" class="form-select form-select-sm"><option value="">Barchasi</option>
+        {% for y in years %}<option {% sel "year" y %}>{{ y }}</option>{% endfor %}</select></div>{% endif %}
+    <div class="col-auto"><button class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Qo‘llash</button>
+      <a href="?" class="btn btn-light btn-sm">Tozalash</a></div>
+    <div class="col-auto ms-auto"><button type="button" class="btn btn-light btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i>Chop etish</button></div>
+  </div>
+</form>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3"><div class="stat-card tone-navy"><div class="stat-icon"><i class="bi bi-person-video3"></i></div><div class="stat-value">{{ kpi.teachers }}</div><div class="stat-label">O‘qituvchilar · {{ kpi.students }} talaba</div></div></div>
+  <div class="col-6 col-xl-3"><div class="stat-card tone-green"><div class="stat-icon"><i class="bi bi-patch-check"></i></div><div class="stat-value">{{ kpi.theses_approved }}<span class="fs-6 text-muted"> / {{ kpi.theses }}</span></div><div class="stat-label">Tasdiqlangan BMI mavzulari ({{ kpi.theses_approved|percent:kpi.theses }}%)</div></div></div>
+  <div class="col-6 col-xl-3"><div class="stat-card tone-gold"><div class="stat-icon"><i class="bi bi-journal-check"></i></div><div class="stat-value">{{ kpi.works_approved }}</div><div class="stat-label">Tasdiqlangan ilmiy ishlar · {{ kpi.works_pending }} baholashda</div></div></div>
+  <div class="col-6 col-xl-3"><div class="stat-card tone-amber"><div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div><div class="stat-value">{{ kpi.score_avg|floatformat:1 }}</div><div class="stat-label">O‘rtacha ball · talabalar ishtiroki {{ kpi.participation }}%</div></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-xl-4"><div class="card h-100"><div class="card-header"><i class="bi bi-pie-chart"></i> BMI mavzulari holati</div>
+    <div class="card-body"><div class="chart-box"><canvas id="thesisStatus" aria-label="BMI mavzulari holati"></canvas></div></div></div></div>
+  <div class="col-xl-8"><div class="card h-100"><div class="card-header"><i class="bi bi-building"></i> Kafedralar kesimida BMI kelishuvi</div>
+    <div class="card-body"><div class="chart-box"><canvas id="thesisByDept" aria-label="Kafedralar kesimida BMI"></canvas></div></div></div></div>
+  <div class="col-xl-6"><div class="card h-100"><div class="card-header"><i class="bi bi-trophy"></i> Eng yuqori ball to‘plagan o‘qituvchilar (TOP-10)</div>
+    <div class="card-body"><div class="chart-box" style="height:340px"><canvas id="topTeachers" aria-label="TOP-10 o‘qituvchi"></canvas></div></div></div></div>
+  <div class="col-xl-6"><div class="card h-100"><div class="card-header"><i class="bi bi-graph-up"></i> Oylar kesimida yuklangan ilmiy ishlar (12 oy)</div>
+    <div class="card-body"><div class="chart-box" style="height:340px"><canvas id="monthly" aria-label="Oylik dinamika"></canvas></div></div></div></div>
+  <div class="col-xl-6"><div class="card h-100"><div class="card-header"><i class="bi bi-journals"></i> Tasdiqlangan ishlar — turlari bo‘yicha</div>
+    <div class="card-body"><div class="chart-box"><canvas id="worksByType" aria-label="Ish turlari"></canvas></div></div></div></div>
+  <div class="col-xl-6"><div class="card h-100"><div class="card-header"><i class="bi bi-globe2"></i> Tasdiqlangan ishlar — nashr darajasi bo‘yicha</div>
+    <div class="card-body"><div class="chart-box"><canvas id="worksByLevel" aria-label="Nashr darajasi"></canvas></div></div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-6"><div class="card h-100"><div class="card-header"><i class="bi bi-building"></i> Kafedralar reytingi</div>
+    <div class="table-responsive"><table class="table table-hover">
+      <thead><tr><th>#</th><th>Kafedra</th><th class="text-center">O‘qit.</th><th class="text-center">Ishlar</th><th class="text-end">Jami ball</th><th class="text-end">O‘rtacha</th></tr></thead>
+      <tbody>{% for d in dept_ranking %}<tr><td><span class="rank-badge {% if forloop.counter <= 3 %}rank-{{ forloop.counter }}{% endif %}">{{ forloop.counter }}</span></td>
+        <td class="small fw-600">{{ d.name }}</td><td class="text-center">{{ d.teachers }}</td><td class="text-center">{{ d.works }}</td>
+        <td class="text-end fw-bold">{{ d.score|floatformat:1 }}</td><td class="text-end">{{ d.avg|floatformat:1 }}</td></tr>
+      {% empty %}<tr><td colspan="6"><div class="empty-state py-3">Ma’lumot yo‘q</div></td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+  <div class="col-xl-6"><div class="card h-100"><div class="card-header"><i class="bi bi-list-ol"></i> O‘qituvchilar faoliyati reytingi</div>
+    <div class="table-responsive" style="max-height:520px"><table class="table table-hover">
+      <thead><tr><th>#</th><th>O‘qituvchi</th><th>Kafedra</th><th class="text-center">Talabalar</th><th class="text-center">Ishlar</th><th class="text-end">Ball</th></tr></thead>
+      <tbody>{% for t in ranked %}<tr><td><span class="rank-badge {% if forloop.counter <= 3 and t.total_score %}rank-{{ forloop.counter }}{% endif %}">{{ forloop.counter }}</span></td>
+        <td><a href="{% url 'accounts:teacher_detail' t.pk %}" class="fw-600 small">{{ t.full_name }}</a></td>
+        <td class="small text-muted">{{ t.department.short_name|default:t.department.name }}</td>
+        <td class="text-center">{{ t.students_count }}</td><td class="text-center">{{ t.works_count }}</td>
+        <td class="text-end fw-bold" style="color:var(--navy-800)">{{ t.total_score|floatformat:2 }}</td></tr>
+      {% empty %}<tr><td colspan="6"><div class="empty-state py-3">Ma’lumot yo‘q</div></td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+</div>
+</div>
+{{ charts_json|json_script:"charts-data" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script>
+(function () {
+  const data = JSON.parse(document.getElementById("charts-data").textContent);
+  const css = getComputedStyle(document.querySelector(".viz-root"));
+  const v = (n) => css.getPropertyValue(n).trim();
+  Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = v("--text-secondary");
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.boxWidth = 8;
+  Chart.defaults.plugins.tooltip.backgroundColor = "#0a2342";
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  const grid = { color: v("--grid"), drawTicks: false };
+  const bar = { borderRadius: 4, borderSkipped: "start", maxBarThickness: 28, borderColor: "#fff", borderWidth: 0 };
+  const empty = (id, d) => { if (!d.labels.length) { document.getElementById(id).parentElement.innerHTML =
+      '<div class="empty-state"><i class="bi bi-bar-chart"></i>Ma’lumot hali yo‘q</div>'; return true; } return false; };
+  const status = [v("--st-draft"), v("--st-pending"), v("--st-approved"), v("--st-returned")];
+
+  if (data.thesisStatus.data.some((x) => x > 0)) {
+    new Chart(thesisStatus, { type: "doughnut",
+      data: { labels: data.thesisStatus.labels, datasets: [{ data: data.thesisStatus.data, backgroundColor: status, borderColor: "#fff", borderWidth: 2 }] },
+      options: { maintainAspectRatio: false, cutout: "68%", plugins: { legend: { position: "bottom" } } } });
+  } else { empty("thesisStatus", { labels: [] }); }
+
+  if (!empty("thesisByDept", data.thesisByDept)) {
+    const d = data.thesisByDept;
+    const ds = [["Tasdiqlangan", d.approved, status[2]], ["Kelishuvda", d.pending, status[1]], ["Qaytarilgan", d.returned, status[3]], ["Loyiha", d.draft, status[0]]]
+      .filter(([, arr]) => arr.some((x) => x > 0))
+      .map(([label, arr, color]) => ({ label, data: arr, backgroundColor: color, ...bar, borderWidth: { top: 2 }, borderSkipped: false, borderRadius: 2 }));
+    new Chart(thesisByDept, { type: "bar", data: { labels: d.labels, datasets: ds },
+      options: { maintainAspectRatio: false, interaction: { mode: "index" },
+        plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { title: (items) => d.full[items[0].dataIndex] } } },
+        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid, ticks: { precision: 0 } } } } });
+  }
+
+  if (!empty("topTeachers", data.topTeachers)) {
+    new Chart(topTeachers, { type: "bar",
+      data: { labels: data.topTeachers.labels, datasets: [{ label: "Umumiy ball", data: data.topTeachers.data, backgroundColor: v("--bar"), ...bar }] },
+      options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, grid }, y: { grid: { display: false } } } } });
+  }
+
+  if (!empty("monthly", data.monthly)) {
+    const line = (label, arr, color) => ({ label, data: arr, borderColor: color, backgroundColor: color, borderWidth: 2, tension: .3, pointRadius: 4, pointHoverRadius: 6 });
+    new Chart(monthly, { type: "line",
+      data: { labels: data.monthly.labels, datasets: [line("Yuklangan", data.monthly.total, v("--series-1")), line("Tasdiqlangan", data.monthly.approved, v("--series-2"))] },
+      options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { position: "bottom" } },
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid, ticks: { precision: 0 } } } } });
+  }
+
+  [["worksByType", data.worksByType], ["worksByLevel", data.worksByLevel]].forEach(([id, d]) => {
+    if (empty(id, d)) return;
+    new Chart(document.getElementById(id), { type: "bar",
+      data: { labels: d.labels, datasets: [{ label: "Ishlar soni", data: d.data, backgroundColor: v("--bar"), ...bar }] },
+      options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, grid, ticks: { precision: 0 } }, y: { grid: { display: false } } } } });
+  });
+})();
+</script>
+{% endblock %}

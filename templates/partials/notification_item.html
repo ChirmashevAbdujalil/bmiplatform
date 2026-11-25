@@ -1,0 +1,8 @@
+<a href="{% url 'core:notification_open' n.pk %}" class="notif-item {% if not n.is_read %}unread{% endif %}">
+  <span class="notif-dot status-{{ n.level }}"><i class="bi {% if n.level == 'success' %}bi-check2-circle{% elif n.level == 'danger' %}bi-arrow-counterclockwise{% elif n.level == 'warning' %}bi-hourglass-split{% else %}bi-info-circle{% endif %}"></i></span>
+  <span class="flex-grow-1 small">
+    <span class="d-block fw-600">{{ n.title }}</span>
+    {% if n.message %}<span class="d-block text-muted text-truncate" style="max-width:270px">{{ n.message }}</span>{% endif %}
+    <span class="d-block text-muted" style="font-size:.7rem">{{ n.created_at|timesince }} oldin</span>
+  </span>
+</a>

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Hujjatni tekshirish{% endblock %}
+{% block body %}
+<div class="container px-3">
+  <div class="verify-card">
+    <div class="text-center mb-4">
+      <span class="brand-emblem mx-auto mb-2"><i class="bi bi-mortarboard-fill"></i></span>
+      <div class="fw-bold" style="color:var(--navy-800)">{{ UNIVERSITY_NAME }}</div>
+      <div class="small text-muted">{{ PLATFORM_NAME }} · Hujjat haqiqiyligini tekshirish</div>
+    </div>
+    {% if valid %}
+    <div class="card" style="border-top:4px solid var(--success)">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <span class="seal doc-card p-0 border-0" style="background:none"><span class="seal"><i class="bi bi-patch-check-fill"></i></span></span>
+          <div><h2 class="h5 fw-bold mb-0 text-success">Hujjat haqiqiy</h2>
+            <div class="small text-muted">Tekshirish kodi: <strong>{{ thesis.short_code }}</strong> · Tasdiqlangan: {{ thesis.approved_at|date:"d.m.Y H:i" }}</div></div>
+        </div>
+        <dl class="info-list">
+          <dt>Talaba</dt><dd>{{ thesis.student.full_name }}</dd>
+          <dt>Fakultet</dt><dd>{{ thesis.department.faculty.name|default:"—" }}</dd>
+          <dt>Kafedra</dt><dd>{{ thesis.department.name|default:"—" }}</dd>
+          <dt>BMI mavzusi</dt><dd>{{ thesis.topic }}</dd>
+          <dt>Ilmiy rahbar</dt><dd>{{ thesis.supervisor.full_name|default:"—" }}</dd>
+          <dt>O‘quv yili</dt><dd>{{ thesis.academic_year }}</dd>
+        </dl>
+      </div>
+    </div>
+    {% else %}
+    <div class="card" style="border-top:4px solid var(--danger)">
+      <div class="card-body p-4 text-center">
+        <i class="bi bi-x-octagon text-danger" style="font-size:3rem"></i>
+        <h2 class="h5 fw-bold mt-2">Hujjat topilmadi yoki tasdiqlanmagan</h2>
+        <p class="text-muted mb-0">Ushbu kod bo‘yicha amaldagi tasdiqlangan hujjat mavjud emas.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

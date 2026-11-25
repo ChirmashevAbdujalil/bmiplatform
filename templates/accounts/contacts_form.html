@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Aloqa ma’lumotlari{% endblock %}
+{% block page_title %}Aloqa ma’lumotlari{% endblock %}
+{% block content %}
+<div class="row"><div class="col-lg-6"><div class="card"><div class="card-body">
+  <form method="post">{% csrf_token %}{% include "partials/form_fields.html" %}
+    <button class="btn btn-primary mt-3">Saqlash</button>
+    <a href="{% url 'accounts:my_profile' %}" class="btn btn-light mt-3">Bekor qilish</a>
+  </form>
+</div></div></div></div>
+{% endblock %}

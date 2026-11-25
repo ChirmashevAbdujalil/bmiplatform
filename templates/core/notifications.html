@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Bildirishnomalar{% endblock %}
+{% block page_title %}Bildirishnomalar{% endblock %}
+{% block content %}
+<div class="page-actions justify-content-end">
+  <form method="post" action="{% url 'core:notifications_read_all' %}">{% csrf_token %}<button class="btn btn-light"><i class="bi bi-check2-all me-1"></i>Barchasini o‘qilgan deb belgilash</button></form>
+</div>
+<div class="card">
+  {% for n in page %}{% include "partials/notification_item.html" %}{% empty %}
+  <div class="empty-state"><i class="bi bi-bell-slash"></i>Bildirishnomalar yo‘q</div>{% endfor %}
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

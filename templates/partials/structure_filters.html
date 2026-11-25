@@ -1,0 +1,39 @@
+{% load bmi %}
+{% if faculties|length > 1 %}
+<div class="col-6 col-md-3 col-xl">
+  <label class="form-label">Fakultet</label>
+  <select name="faculty" class="form-select form-select-sm" onchange="this.form.department && (this.form.department.value=''); this.form.direction && (this.form.direction.value=''); this.form.submit()">
+    <option value="">Barchasi</option>
+    {% for f in faculties %}<option value="{{ f.pk }}" {% sel "faculty" f.pk %}>{{ f.short_name|default:f.name }}</option>{% endfor %}
+  </select>
+</div>
+{% endif %}
+{% if departments|length > 1 %}
+<div class="col-6 col-md-3 col-xl">
+  <label class="form-label">Kafedra</label>
+  <select name="department" class="form-select form-select-sm">
+    <option value="">Barchasi</option>
+    {% for d in departments %}<option value="{{ d.pk }}" {% sel "department" d.pk %}>{{ d.name }}</option>{% endfor %}
+  </select>
+</div>
+{% endif %}
+{% if not no_direction %}
+<div class="col-6 col-md-3 col-xl">
+  <label class="form-label">Yo‘nalish</label>
+  <select name="direction" class="form-select form-select-sm">
+    <option value="">Barchasi</option>
+    {% for d in directions %}<option value="{{ d.pk }}" {% sel "direction" d.pk %}>{{ d }}</option>{% endfor %}
+  </select>
+</div>
+<div class="col-6 col-md-2 col-xl-1">
+  <label class="form-label">Kurs</label>
+  <select name="course" class="form-select form-select-sm">
+    <option value="">—</option>
+    {% for c in courses %}<option value="{{ c }}" {% sel "course" c %}>{{ c }}</option>{% endfor %}
+  </select>
+</div>
+<div class="col-6 col-md-2 col-xl-1">
+  <label class="form-label">Guruh</label>
+  <input name="group" value="{{ request.GET.group }}" class="form-control form-control-sm" placeholder="411-21">
+</div>
+{% endif %}

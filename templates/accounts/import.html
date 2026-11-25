@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-5">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-cloud-arrow-up"></i> Word faylni yuklash</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">{% csrf_token %}
+          <div class="border border-2 rounded-3 p-4 text-center mb-3" style="border-style:dashed!important;background:#f8fafd">
+            <i class="bi bi-file-earmark-word" style="font-size:2.4rem;color:var(--primary)"></i>
+            <div class="fw-600 mt-2 mb-2">.docx faylni tanlang</div>
+            {{ form.file }}
+            {% for e in form.file.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+          <button class="btn btn-primary w-100"><i class="bi bi-upload me-1"></i>Import qilish</button>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-info-circle"></i> Qo‘llanma</div>
+      <div class="card-body small">
+        <ol class="ps-3 mb-3">
+          <li class="mb-1">Namuna shablonni yuklab oling.</li>
+          <li class="mb-1">Jadvalni to‘ldiring (sarlavha qatorini saqlang, qatorlar soni cheklanmagan).</li>
+          <li class="mb-1">Faylni yuklang — tizim ustunlarni sarlavha bo‘yicha avtomatik aniqlaydi.</li>
+          <li>Mavjud yozuvlar takrorlanmaydi, balki yangilanadi.</li>
+        </ol>
+        <p class="text-muted">{{ template_spec.hint }}</p>
+        <a href="{% url 'accounts:import_template' kind %}" class="btn btn-gold btn-sm"><i class="bi bi-download me-1"></i>Namuna shablonni yuklab olish</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-7">
+    {% if result %}
+      <div class="row g-3 mb-3">
+        <div class="col-4"><div class="stat-card tone-green"><div class="stat-icon"><i class="bi bi-plus-circle"></i></div><div class="stat-value">{{ result.created }}</div><div class="stat-label">Yangi qo‘shildi</div></div></div>
+        <div class="col-4"><div class="stat-card tone-navy"><div class="stat-icon"><i class="bi bi-arrow-repeat"></i></div><div class="stat-value">{{ result.updated }}</div><div class="stat-label">Yangilandi</div></div></div>
+        <div class="col-4"><div class="stat-card tone-red"><div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div><div class="stat-value">{{ result.errors|length }}</div><div class="stat-label">Ogohlantirish</div></div></div>
+      </div>
+      {% if result.errors %}
+      <div class="card mb-3"><div class="card-header"><i class="bi bi-exclamation-triangle"></i> Ogohlantirishlar</div>
+        <div class="table-responsive"><table class="table table-sm">
+          <thead><tr><th style="width:90px">Qator</th><th>Izoh</th></tr></thead>
+          <tbody>{% for row, msg in result.errors %}<tr><td>{{ row }}</td><td>{{ msg }}</td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+      {% endif %}
+      {% if result.credentials %}
+      <div class="card">
+        <div class="card-header justify-content-between"><span><i class="bi bi-key"></i> Yangi hisoblar uchun login-parollar</span>
+          <a href="{% url 'accounts:credentials_download' %}" class="btn btn-gold btn-sm"><i class="bi bi-file-earmark-word me-1"></i>Word’da yuklab olish</a></div>
+        <div class="alert alert-warning small m-3 mb-0"><i class="bi bi-shield-exclamation me-1"></i>Parollar faqat hozir ko‘rsatiladi. Ro‘yxatni yuklab oling va egalariga topshiring — ular birinchi kirishda parolni almashtiradi.</div>
+        <div class="table-responsive"><table class="table">
+          <thead><tr><th>№</th><th>F.I.Sh.</th><th>Login</th><th>Parol</th></tr></thead>
+          <tbody>{% for c in result.credentials %}<tr><td>{{ forloop.counter }}</td><td>{{ c.name }}</td><td><code>{{ c.username }}</code></td><td><code>{{ c.password }}</code></td></tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+      {% endif %}
+      <a href="{% url back %}" class="btn btn-primary mt-3"><i class="bi bi-arrow-right me-1"></i>Ro‘yxatga o‘tish</a>
+    {% else %}
+      <div class="card">
+        <div class="card-header"><i class="bi bi-table"></i> Shablon tuzilmasi</div>
+        <div class="table-responsive"><table class="table table-bordered small mb-0">
+          <thead><tr>{% for h in template_spec.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+          <tbody>{% for row in template_spec.sample %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        </table></div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

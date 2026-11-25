@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Tuzilma{% endblock %}
+{% block page_title %}Universitet tuzilmasi{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-7">
+    {% for f in faculties %}
+    <div class="card mb-3">
+      <div class="card-header justify-content-between"><span><i class="bi bi-bank"></i> {{ f.name }} <span class="text-muted small fw-normal">· {{ f.students }} talaba</span></span>
+        <form method="post" action="{% url 'core:structure_delete' 'faculty' f.pk %}">{% csrf_token %}<button class="btn btn-sm btn-light text-danger" data-confirm="Fakultet va unga tegishli barcha kafedralar o‘chirilsinmi?"><i class="bi bi-trash"></i></button></form></div>
+      <div class="card-body">
+        <div class="small-caps mb-2">Kafedralar</div>
+        {% for d in f.departments.all %}
+          <div class="d-flex justify-content-between align-items-center py-1 border-bottom"><span class="small"><i class="bi bi-building me-1 text-muted"></i>{{ d.name }}</span>
+            <form method="post" action="{% url 'core:structure_delete' 'department' d.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" data-confirm="Kafedra o‘chirilsinmi?"><i class="bi bi-x-lg"></i></button></form></div>
+        {% empty %}<div class="small text-muted">Kafedralar yo‘q</div>{% endfor %}
+        <div class="small-caps mt-3 mb-2">Ta’lim yo‘nalishlari</div>
+        {% for d in f.directions.all %}
+          <div class="d-flex justify-content-between align-items-center py-1 border-bottom"><span class="small"><i class="bi bi-signpost me-1 text-muted"></i>{{ d }}{% if d.department %} <span class="text-muted">({{ d.department.name }})</span>{% endif %}</span>
+            <form method="post" action="{% url 'core:structure_delete' 'direction' d.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" data-confirm="Yo‘nalish o‘chirilsinmi?"><i class="bi bi-x-lg"></i></button></form></div>
+        {% empty %}<div class="small text-muted">Yo‘nalishlar yo‘q (talabalar importida avtomatik yaratiladi)</div>{% endfor %}
+      </div>
+    </div>
+    {% empty %}<div class="card"><div class="empty-state"><i class="bi bi-diagram-3"></i>Tuzilma bo‘sh. Avval fakultet qo‘shing.</div></div>{% endfor %}
+  </div>
+  <div class="col-xl-5">
+    <div class="card mb-3"><div class="card-header"><i class="bi bi-bank"></i> Fakultet qo‘shish</div><div class="card-body">
+      <form method="post">{% csrf_token %}<input type="hidden" name="kind" value="faculty">{% include "partials/form_fields.html" with form=forms.faculty %}<button class="btn btn-primary btn-sm mt-3">Qo‘shish</button></form></div></div>
+    <div class="card mb-3"><div class="card-header"><i class="bi bi-building"></i> Kafedra qo‘shish</div><div class="card-body">
+      <form method="post">{% csrf_token %}<input type="hidden" name="kind" value="department">{% include "partials/form_fields.html" with form=forms.department %}<button class="btn btn-primary btn-sm mt-3">Qo‘shish</button></form></div></div>
+    <div class="card"><div class="card-header"><i class="bi bi-signpost"></i> Ta’lim yo‘nalishi qo‘shish</div><div class="card-body">
+      <form method="post">{% csrf_token %}<input type="hidden" name="kind" value="direction">{% include "partials/form_fields.html" with form=forms.direction %}<button class="btn btn-primary btn-sm mt-3">Qo‘shish</button></form></div></div>
+  </div>
+</div>
+{% endblock %}

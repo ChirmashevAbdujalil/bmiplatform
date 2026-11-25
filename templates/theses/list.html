@@ -1,0 +1,112 @@
+{% extends "base.html" %}{% load bmi %}
+{% block title %}BMI mavzulari{% endblock %}
+{% block page_title %}{% if request.user.is_teacher %}Ilmiy rahbarligimdagi talabalar{% elif request.user.is_kafedra %}BMI mavzulari va ilmiy rahbarlar{% else %}BMI mavzularini kelishish{% endif %}{% endblock %}
+{% block content %}
+{% with u=request.user %}
+{% if u.is_kafedra and unassigned %}
+<div class="alert alert-warning d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i>
+  <div class="flex-grow-1">Kafedrangizdagi <strong>{{ unassigned }}</strong> nafar talabaga hali mavzu biriktirilmagan.</div>
+  <a href="{% url 'accounts:student_list' %}?thesis=none" class="btn btn-sm btn-warning">Ko‘rish</a></div>
+{% endif %}
+
+<div class="page-actions">
+  <div class="status-tabs mb-0">
+    <a href="{% qs status='' mine='' page='' %}" class="{% if not request.GET.status and not request.GET.mine %}active{% endif %}">Barchasi</a>
+    {% if u.is_dekanat or u.is_sifat or u.is_admin_role %}
+      <a href="{% qs mine='1' status='' page='' %}" class="{% if request.GET.mine %}active{% endif %}"><i class="bi bi-inbox"></i> Mening qarorimni kutmoqda {% if badges.theses %}<span class="count">{{ badges.theses }}</span>{% endif %}</a>
+    {% endif %}
+    {% for val, label in statuses %}
+      {% if val != 'draft' or u.is_kafedra or u.is_teacher or u.is_admin_role %}
+      <a href="{% qs status=val mine='' page='' %}" class="{% if request.GET.status == val %}active{% endif %}">{{ label }} <span class="count">{{ counts|get_item:val }}</span></a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if u.is_manager %}
+    <div class="dropdown">
+      <button class="btn btn-gold dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download me-1"></i>Tasdiqlanganlarni yuklab olish</button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+        <li><a class="dropdown-item" href="{% url 'theses:export' %}{% qs page='' status='' mine='' %}&format=docx"><i class="bi bi-file-earmark-word me-2 text-primary"></i>Word (rasmiy ro‘yxat)</a></li>
+        <li><a class="dropdown-item" href="{% url 'theses:export' %}{% qs page='' status='' mine='' %}&format=xlsx"><i class="bi bi-file-earmark-excel me-2 text-success"></i>Excel</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item small" href="{% url 'theses:export' %}{% qs page='' %}&format=xlsx&all=1"><i class="bi bi-table me-2"></i>Joriy filtr bo‘yicha (barcha holatlar)</a></li>
+      </ul>
+    </div>
+    {% endif %}
+    {% if u.is_kafedra %}
+      <a href="{% url 'theses:import' %}" class="btn btn-light"><i class="bi bi-file-earmark-word me-1"></i>Word’dan import</a>
+      <a href="{% url 'theses:create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Biriktirish</a>
+    {% endif %}
+  </div>
+</div>
+
+<form class="filter-bar" method="get">
+  {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
+  {% if request.GET.mine %}<input type="hidden" name="mine" value="1">{% endif %}
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-4 col-xl-2"><label class="form-label">Qidiruv</label>
+      <input name="q" value="{{ request.GET.q }}" class="form-control form-control-sm" placeholder="Talaba, ID yoki mavzu"></div>
+    {% include "partials/structure_filters.html" %}
+    {% if supervisors %}
+    <div class="col-6 col-md-3 col-xl-2"><label class="form-label">Ilmiy rahbar</label>
+      <select name="supervisor" class="form-select form-select-sm"><option value="">Barchasi</option>
+        {% for t in supervisors %}<option value="{{ t.pk }}" {% sel "supervisor" t.pk %}>{{ t.short_name }}</option>{% endfor %}</select></div>
+    {% endif %}
+    {% if years|length > 1 %}
+    <div class="col-6 col-md-2 col-xl-1"><label class="form-label">O‘quv yili</label>
+      <select name="year" class="form-select form-select-sm"><option value="">—</option>
+        {% for y in years %}<option {% sel "year" y %}>{{ y }}</option>{% endfor %}</select></div>
+    {% endif %}
+    <div class="col-auto"><button class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filtrlash</button>
+      <a href="?" class="btn btn-light btn-sm">Tozalash</a></div>
+  </div>
+</form>
+
+<form method="post" action="{% url 'theses:bulk' %}">{% csrf_token %}
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr>
+        {% if u.is_manager %}<th style="width:32px"><input type="checkbox" class="form-check-input" data-check-all></th>{% endif %}
+        <th>Talaba</th><th>Kurs / guruh</th><th>BMI mavzusi</th><th>Ilmiy rahbar</th><th>Kelishuv</th><th>Holati</th><th></th></tr></thead>
+      <tbody>
+      {% for t in page %}
+        <tr>
+          {% if u.is_manager %}<td><input type="checkbox" class="form-check-input" name="ids" value="{{ t.pk }}" data-row-check></td>{% endif %}
+          <td><a href="{% url 'theses:detail' t.pk %}" class="fw-600">{{ t.student.full_name }}</a>
+            <div class="small text-muted">{{ t.student.student_profile.direction.code }} · {{ t.department.short_name|default:t.department.name }}</div></td>
+          <td class="small text-nowrap">{{ t.student.student_profile.course }}-kurs<br><span class="text-muted">{{ t.student.student_profile.group_name }}</span></td>
+          <td class="small topic">{{ t.topic|truncatechars:120 }}</td>
+          <td class="small">{{ t.supervisor.short_name|default:"—" }}</td>
+          <td class="small text-nowrap">
+            <span title="Dekanat" class="badge text-bg-{{ t.dekanat_decision|decision_badge }}">D</span>
+            <span title="Ta’lim sifati bo‘limi" class="badge text-bg-{{ t.sifat_decision|decision_badge }}">S</span>
+          </td>
+          <td><span class="status status-{{ t.status }}">{{ t.get_status_display }}</span></td>
+          <td class="text-end text-nowrap">
+            {% if t.status == 'approved' %}<a href="{% url 'theses:document' t.pk %}" class="btn btn-sm btn-light" title="Tasdiqlangan hujjat"><i class="bi bi-file-earmark-check text-success"></i></a>{% endif %}
+            {% if u.is_kafedra and t.is_editable %}<a href="{% url 'theses:edit' t.pk %}" class="btn btn-sm btn-light" title="Tahrirlash"><i class="bi bi-pencil"></i></a>{% endif %}
+            <a href="{% url 'theses:detail' t.pk %}" class="btn btn-sm btn-light"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="empty-state"><i class="bi bi-journal-x"></i>Yozuvlar topilmadi</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% if u.is_manager %}
+<div class="bulk-bar mt-3">
+  <i class="bi bi-check2-square"></i> Tanlangan: <strong data-selected-count>0</strong>
+  <div class="ms-auto d-flex gap-2">
+    {% if u.is_kafedra %}<button name="action" value="send" class="btn btn-gold btn-sm" data-confirm="Tanlangan mavzular kelishuvga yuborilsinmi?"><i class="bi bi-send me-1"></i>Kelishuvga yuborish</button>{% endif %}
+    {% if u.is_dekanat or u.is_sifat or u.is_admin_role %}<button name="action" value="approve" class="btn btn-gold btn-sm" data-confirm="Tanlangan mavzular bo‘yicha kelishasizmi?"><i class="bi bi-check2-all me-1"></i>Kelishish</button>{% endif %}
+  </div>
+</div>
+{% endif %}
+</form>
+{% endwith %}
+{% endblock %}

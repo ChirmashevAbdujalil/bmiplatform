@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Ilmiy ish{% endblock %}
+{% block page_title %}{% if work %}Ilmiy ishni tahrirlash{% else %}Ilmiy ish yuklash{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-8">
+    {% if work and work.status == 'returned' %}
+    <div class="alert alert-danger"><i class="bi bi-arrow-counterclockwise me-1"></i><strong>Qayta ishlashga qaytarilgan.</strong>
+      {% for e in work.evaluations.all %}{% if e.decision == 'returned' %}<div class="small mt-1">{{ e.get_role_display }}: “{{ e.comment }}”</div>{% endif %}{% endfor %}
+      <div class="small mt-1">Saqlaganingizdan so‘ng ish qayta baholashga yuboriladi (avvalgi baholar bekor qilinadi).</div></div>
+    {% endif %}
+    <div class="card"><div class="card-header"><i class="bi bi-journal-richtext"></i> Ilmiy ish ma’lumotlari</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">{% csrf_token %}
+          {% include "partials/form_fields.html" with wide_fields="title publication file" %}
+          {% if work and work.file %}<div class="small text-muted mt-2">Joriy fayl: <a href="{% url 'research:file' work.pk %}" target="_blank">{{ work.file.name }}</a> (yangisini yuklamasangiz saqlanib qoladi)</div>{% endif %}
+          <div class="mt-4 d-flex gap-2">
+            <button class="btn btn-primary"><i class="bi bi-send me-1"></i>{% if work %}Saqlash va qayta yuborish{% else %}Baholashga yuborish{% endif %}</button>
+            <a href="{% if work %}{% url 'research:detail' work.pk %}{% else %}{% url 'research:list' %}{% endif %}" class="btn btn-light">Bekor qilish</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card"><div class="card-header"><i class="bi bi-award"></i> Qanday baholanadi?</div>
+      <div class="card-body small">
+        <p>Yuklangan ish <strong>kafedra mudiri</strong>, <strong>dekanat</strong> va <strong>ta’lim sifati bo‘limi</strong> tomonidan bir xil mezonlar asosida mustaqil baholanadi.</p>
+        <p>Uchala tomon kelishgach, <strong>yakuniy ball</strong> — ularning o‘rtachasi sifatida hisoblanadi va profilingizda hamda hammuallif talabalar profilida ko‘rinadi.</p>
+        <p class="mb-0 text-muted">Ruxsat etilgan fayllar: PDF, DOC, DOCX, JPG, PNG, ZIP.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

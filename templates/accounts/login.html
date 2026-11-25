@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Tizimga kirish{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <section class="auth-side">
+    <div class="d-flex align-items-center gap-3">
+      <span class="brand-emblem"><i class="bi bi-mortarboard-fill"></i></span>
+      <div><div class="fw-bold fs-5">{{ PLATFORM_NAME }}</div><div class="small" style="color:#9fb2cc">{{ UNIVERSITY_NAME }}</div></div>
+    </div>
+    <div style="position:relative;z-index:1">
+      <h1 class="mb-4">Bitiruv malakaviy ishlari va ilmiy faoliyatni raqamlashtirish tizimi</h1>
+      <div class="auth-feature"><i class="bi bi-file-earmark-word"></i><div>Kafedra va dekanat ro‘yxatlarni Word fayl orqali bir zumda biriktiradi.</div></div>
+      <div class="auth-feature"><i class="bi bi-patch-check"></i><div>Mavzu va ilmiy rahbar kafedra → dekanat → ta’lim sifati bo‘limi bilan elektron kelishiladi, QR-kodli hujjat shakllanadi.</div></div>
+      <div class="auth-feature"><i class="bi bi-award"></i><div>O‘qituvchi va talabalarning ilmiy ishlari mezonlar asosida markazlashgan holda baholanadi.</div></div>
+      <div class="auth-feature"><i class="bi bi-bar-chart-line"></i><div>Fakultet, kafedra, kurs va yo‘nalish kesimida jonli statistika.</div></div>
+    </div>
+    <div class="small" style="color:#7f93b0;position:relative;z-index:1">© {% now "Y" %} {{ UNIVERSITY_NAME }}</div>
+  </section>
+  <section class="auth-form">
+    <div class="auth-card">
+      <div class="d-lg-none text-center mb-4"><span class="brand-emblem mx-auto"><i class="bi bi-mortarboard-fill"></i></span></div>
+      <h2 class="fw-bold mb-1" style="color:var(--navy-800)">Tizimga kirish</h2>
+      <p class="text-muted mb-4">Login va parolingizni kiriting</p>
+      {% include "partials/messages.html" %}
+      {% if form.non_field_errors %}<div class="alert alert-danger small">Login yoki parol noto‘g‘ri. Qaytadan urinib ko‘ring.</div>{% endif %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label" for="id_username">{{ form.username.label }}</label>
+          <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-person"></i></span>{{ form.username }}</div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="id_password">{{ form.password.label }}</label>
+          <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>{{ form.password }}</div>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-primary w-100 py-2"><i class="bi bi-box-arrow-in-right me-1"></i> Kirish</button>
+      </form>
+      <p class="text-muted small mt-4 mb-0"><i class="bi bi-info-circle me-1"></i>Talabalar uchun login — HEMIS ID. Login-parolni dekanat yoki kafedradan oling.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

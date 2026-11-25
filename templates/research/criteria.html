@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Baholash mezonlari{% endblock %}
+{% block page_title %}Ilmiy ishlarni baholash mezonlari{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-7">
+    <div class="card">
+      <div class="card-header justify-content-between"><span><i class="bi bi-sliders"></i> Mezonlar</span><span class="small">Faol mezonlar bo‘yicha maksimal: <strong>{{ total }}</strong> ball</span></div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>#</th><th>Mezon</th><th class="text-center">Maks. ball</th><th>Holati</th><th></th></tr></thead>
+        <tbody>{% for c in criteria %}
+          <tr><td>{{ c.order }}</td><td><div class="fw-600">{{ c.name }}</div><div class="small text-muted">{{ c.description }}</div></td>
+            <td class="text-center fw-bold">{{ c.max_score }}</td>
+            <td>{% if c.is_active %}<span class="status status-approved">Faol</span>{% else %}<span class="status status-draft">Nofaol</span>{% endif %}</td>
+            <td class="text-end"><a href="{% url 'research:criterion_edit' c.pk %}" class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></a></td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+    <div class="alert alert-info small mt-3"><i class="bi bi-info-circle me-1"></i>Tavsiya: faol mezonlar yig‘indisi 100 ball bo‘lgani ma’qul. Mezonni o‘chirish o‘rniga nofaol qiling — avvalgi baholar saqlanib qoladi.</div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card"><div class="card-header"><i class="bi bi-plus-circle"></i> {% if editing %}Mezonni tahrirlash{% else %}Yangi mezon{% endif %}</div>
+      <div class="card-body">
+        <form method="post">{% csrf_token %}{% include "partials/form_fields.html" with wide_fields="name" %}
+          <button class="btn btn-primary mt-3">Saqlash</button>
+          {% if editing %}<a href="{% url 'research:criteria' %}" class="btn btn-light mt-3">Bekor qilish</a>{% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

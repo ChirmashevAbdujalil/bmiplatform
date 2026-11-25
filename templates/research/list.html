@@ -1,0 +1,61 @@
+{% extends "base.html" %}{% load bmi %}
+{% block title %}Ilmiy ishlar{% endblock %}
+{% block page_title %}{% if request.user.is_teacher %}Ilmiy ishlarim{% elif request.user.is_student %}Tasdiqlangan ilmiy ishlarim{% else %}Ilmiy ishlarni markazlashgan baholash{% endif %}{% endblock %}
+{% block content %}
+{% with u=request.user %}
+<div class="page-actions">
+  <div class="status-tabs mb-0">
+    <a href="{% qs status='' mine='' page='' %}" class="{% if not request.GET.status and not request.GET.mine %}active{% endif %}">Barchasi</a>
+    {% if role %}<a href="{% qs mine='1' status='' page='' %}" class="{% if request.GET.mine %}active{% endif %}"><i class="bi bi-inbox"></i> Bahoyimni kutmoqda <span class="count">{{ awaiting }}</span></a>{% endif %}
+    {% if not u.is_student %}{% for v, l in statuses %}<a href="{% qs status=v mine='' page='' %}" class="{% if request.GET.status == v %}active{% endif %}">{{ l }}</a>{% endfor %}{% endif %}
+  </div>
+  {% if u.is_teacher %}<a href="{% url 'research:create' %}" class="btn btn-primary"><i class="bi bi-cloud-arrow-up me-1"></i>Ilmiy ish yuklash</a>{% endif %}
+</div>
+<form class="filter-bar" method="get">
+  {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
+  {% if request.GET.mine %}<input type="hidden" name="mine" value="1">{% endif %}
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-4 col-xl-3"><label class="form-label">Qidiruv</label>
+      <input name="q" value="{{ request.GET.q }}" class="form-control form-control-sm" placeholder="Nomi, jurnal yoki o‘qituvchi"></div>
+    {% if u.is_manager %}{% include "partials/structure_filters.html" with no_direction=True %}
+    <div class="col-6 col-md-3 col-xl"><label class="form-label">O‘qituvchi</label>
+      <select name="teacher" class="form-select form-select-sm"><option value="">Barchasi</option>
+        {% for t in teachers %}<option value="{{ t.pk }}" {% sel "teacher" t.pk %}>{{ t.short_name }}</option>{% endfor %}</select></div>{% endif %}
+    <div class="col-6 col-md-3 col-xl"><label class="form-label">Turi</label>
+      <select name="type" class="form-select form-select-sm"><option value="">Barchasi</option>
+        {% for v, l in types %}<option value="{{ v }}" {% sel "type" v %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-3 col-xl"><label class="form-label">Darajasi</label>
+      <select name="level" class="form-select form-select-sm"><option value="">Barchasi</option>
+        {% for v, l in levels %}<option value="{{ v }}" {% sel "level" v %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-auto"><button class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filtrlash</button>
+      <a href="?" class="btn btn-light btn-sm">Tozalash</a></div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>Ilmiy ish</th>{% if not u.is_teacher %}<th>O‘qituvchi</th>{% endif %}<th>Talaba hammualliflar</th><th>Turi / darajasi</th><th>Baholar</th><th>Holati</th><th class="text-end">Ball</th></tr></thead>
+      <tbody>
+      {% for w in page %}
+        <tr>
+          <td><a href="{% url 'research:detail' w.pk %}" class="fw-600">{{ w.title|truncatechars:85 }}</a>
+            <div class="small text-muted">{{ w.publication|truncatechars:55 }}{% if w.publication_date %} · {{ w.publication_date|date:"d.m.Y" }}{% endif %}</div></td>
+          {% if not u.is_teacher %}<td class="small"><a href="{% url 'accounts:teacher_detail' w.teacher_id %}">{{ w.teacher.short_name }}</a><div class="text-muted">{{ w.teacher.department.short_name|default:w.teacher.department.name }}</div></td>{% endif %}
+          <td class="small">{% for s in w.students.all %}{{ s.short_name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+          <td class="small">{{ w.get_work_type_display }}<br><span class="text-muted">{{ w.get_level_display }}</span></td>
+          <td class="small text-nowrap">
+            {% for e in w.evaluations.all %}<span class="badge text-bg-{{ e.decision|decision_badge }}" title="{{ e.get_role_display }}: {{ e.total }}">{{ e.role|first|upper }}</span> {% empty %}<span class="text-muted">0/3</span>{% endfor %}
+          </td>
+          <td><span class="status status-{{ w.status }}">{{ w.get_status_display }}</span></td>
+          <td class="text-end fw-bold" style="color:var(--navy-800)">{% if w.final_score is not None %}{{ w.final_score }}{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="empty-state"><i class="bi bi-journal-x"></i>Ilmiy ishlar topilmadi</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endwith %}
+{% endblock %}

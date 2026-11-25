@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Mavzu va ilmiy rahbar biriktirish{% endblock %}
+{% block page_title %}{% if thesis %}Mavzuni tahrirlash{% else %}Mavzu va ilmiy rahbar biriktirish{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card"><div class="card-header"><i class="bi bi-journal-plus"></i> Bitiruv malakaviy ishi</div>
+      <div class="card-body">
+        {% if thesis and thesis.status == 'returned' %}
+          <div class="alert alert-danger small"><i class="bi bi-arrow-counterclockwise me-1"></i><strong>Qaytarilgan.</strong>
+            {% if thesis.dekanat_comment %}Dekanat: “{{ thesis.dekanat_comment }}”. {% endif %}{% if thesis.sifat_comment %}Ta’lim sifati: “{{ thesis.sifat_comment }}”.{% endif %}</div>
+        {% endif %}
+        <form method="post">{% csrf_token %}
+          {% include "partials/form_fields.html" with wide_fields="student topic" %}
+          <div class="mt-4 d-flex gap-2 flex-wrap">
+            <button class="btn btn-light" name="send" value="0"><i class="bi bi-save me-1"></i>Loyiha sifatida saqlash</button>
+            <button class="btn btn-primary" name="send" value="1"><i class="bi bi-send me-1"></i>Saqlash va kelishuvga yuborish</button>
+            <a href="{% if thesis %}{% url 'theses:detail' thesis.pk %}{% else %}{% url 'theses:list' %}{% endif %}" class="btn btn-link">Bekor qilish</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card"><div class="card-header"><i class="bi bi-diagram-2"></i> Kelishuv tartibi</div>
+      <div class="card-body small">
+        <ol class="ps-3 mb-0">
+          <li class="mb-2"><strong>Kafedra</strong> talabaga mavzu va ilmiy rahbarni biriktiradi va kelishuvga yuboradi.</li>
+          <li class="mb-2"><strong>Dekanat</strong> va <strong>Ta’lim sifati bo‘limi</strong> parallel ravishda ko‘rib chiqadi.</li>
+          <li class="mb-2">Ikkalasi ham kelishgach, hujjat <strong>QR-kodli tasdiqlangan hujjat</strong> sifatida shakllanadi va talaba profilida paydo bo‘ladi.</li>
+          <li>Qaytarilsa — izoh bilan kafedraga qaytadi, tuzatib qayta yuboriladi.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

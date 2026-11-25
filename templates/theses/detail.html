@@ -1,0 +1,110 @@
+{% extends "base.html" %}{% load bmi %}
+{% block title %}BMI: {{ thesis.student.full_name }}{% endblock %}
+{% block page_title %}Bitiruv malakaviy ishi{% endblock %}
+{% block content %}
+{% with u=request.user p=thesis.student.student_profile %}
+<div class="page-actions">
+  <a href="{% url 'theses:list' %}" class="btn btn-light"><i class="bi bi-arrow-left me-1"></i>Ro‘yxatga qaytish</a>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if u.is_kafedra and thesis.is_editable %}
+      <a href="{% url 'theses:edit' thesis.pk %}" class="btn btn-light"><i class="bi bi-pencil me-1"></i>Tahrirlash</a>
+      {% if thesis.status == 'draft' %}
+      <form method="post" action="{% url 'theses:delete' thesis.pk %}">{% csrf_token %}<button class="btn btn-light text-danger" data-confirm="Yozuv o‘chirilsinmi?"><i class="bi bi-trash"></i></button></form>
+      {% endif %}
+      <form method="post" action="{% url 'theses:send' thesis.pk %}">{% csrf_token %}<button class="btn btn-primary"><i class="bi bi-send me-1"></i>Kelishuvga yuborish</button></form>
+    {% endif %}
+    {% if thesis.status == 'approved' %}
+      <a href="{% url 'theses:document' thesis.pk %}" class="btn btn-gold"><i class="bi bi-file-earmark-word me-1"></i>Tasdiqlangan hujjat</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card mb-4">
+      <div class="card-header justify-content-between"><span><i class="bi bi-journal-bookmark"></i> Mavzu va ilmiy rahbar</span>
+        <span class="status status-{{ thesis.status }}">{{ thesis.get_status_display }}</span></div>
+      <div class="card-body">
+        <div class="small-caps mb-1">BMI mavzusi</div>
+        <p class="fs-5 fw-600 mb-4" style="color:var(--navy-800)">{{ thesis.topic }}</p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="small-caps mb-2">Talaba</div>
+            <a href="{% url 'accounts:student_detail' thesis.student_id %}" class="d-flex align-items-center gap-3 p-3 rounded-3 text-reset" style="background:#f6f8fb">
+              <span class="avatar">{{ thesis.student.initials }}</span>
+              <div><div class="fw-600">{{ thesis.student.full_name }}</div>
+                <div class="small text-muted">ID {{ p.student_id }} · {{ p.course }}-kurs · {{ p.group_name }}</div></div></a>
+          </div>
+          <div class="col-md-6">
+            <div class="small-caps mb-2">Ilmiy rahbar</div>
+            {% if thesis.supervisor %}
+            <a href="{% url 'accounts:teacher_detail' thesis.supervisor_id %}" class="d-flex align-items-center gap-3 p-3 rounded-3 text-reset" style="background:#f6f8fb">
+              <span class="avatar">{{ thesis.supervisor.initials }}</span>
+              <div><div class="fw-600">{{ thesis.supervisor.full_name }}</div>
+                <div class="small text-muted">{{ thesis.supervisor.teacher_profile.position|default:"" }} · yuklama: {{ supervisor_load }}{% if supervisor_max %}/{{ supervisor_max }}{% endif %} talaba</div></div></a>
+            {% else %}<div class="text-muted p-3">Biriktirilmagan</div>{% endif %}
+          </div>
+        </div>
+        <hr>
+        <dl class="info-list">
+          <dt>Fakultet</dt><dd>{{ thesis.department.faculty.name|default:"—" }}</dd>
+          <dt>Kafedra</dt><dd>{{ thesis.department.name|default:"—" }}</dd>
+          <dt>Ta’lim yo‘nalishi</dt><dd>{{ p.direction|default:"—" }}</dd>
+          <dt>Ta’lim shakli</dt><dd>{{ p.get_education_form_display }}</dd>
+          <dt>O‘quv yili</dt><dd>{{ thesis.academic_year }}</dd>
+          {% if thesis.approved_at %}<dt>Tasdiqlangan</dt><dd>{{ thesis.approved_at|date:"d.m.Y H:i" }} · kod <code>{{ thesis.short_code }}</code></dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+
+    {% if decision_form %}
+    <div class="card mb-4" style="border-color:#d9c690">
+      <div class="card-header"><i class="bi bi-pen"></i> Qaroringiz ({% if u.is_dekanat %}Dekanat{% else %}Ta’lim sifati bo‘limi{% endif %})</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'theses:decide' thesis.pk %}">{% csrf_token %}
+          <div class="d-flex gap-3 mb-3 flex-wrap">
+            <label class="btn btn-outline-success"><input type="radio" name="decision" value="approved" class="form-check-input me-2" checked>Kelishaman</label>
+            <label class="btn btn-outline-danger"><input type="radio" name="decision" value="returned" class="form-check-input me-2">Qayta ishlashga qaytaraman</label>
+          </div>
+          <label class="form-label">Izoh (qaytarishda majburiy)</label>
+          {{ decision_form.comment }}
+          <button class="btn btn-primary mt-3"><i class="bi bi-check2-circle me-1"></i>Qarorni tasdiqlash</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if thesis.status == 'approved' %}
+    <div class="doc-card d-flex align-items-center gap-3 flex-wrap mb-4">
+      <span class="seal"><i class="bi bi-patch-check-fill"></i></span>
+      <div class="flex-grow-1"><div class="fw-bold" style="color:var(--navy-800)">Hujjat elektron tasdiqlangan</div>
+        <div class="small text-muted">QR-kod orqali tekshirish: <a href="{{ verify_url }}" target="_blank">{{ verify_url }}</a></div></div>
+      <a href="{% url 'theses:document' thesis.pk %}" class="btn btn-gold"><i class="bi bi-download me-1"></i>Yuklab olish (.docx)</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-diagram-3"></i> Kelishuv varaqasi</div>
+      <div class="card-body py-1">
+        {% approval_steps thesis as steps %}
+        {% include "partials/approval_steps.html" %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history"></i> Tarix</div>
+      <div class="card-body">
+        <ul class="timeline">
+          {% for log in logs %}
+          <li><div class="fw-600">{{ log.action }}</div>
+            {% if log.comment %}<div class="text-muted">“{{ log.comment }}”</div>{% endif %}
+            <div class="when">{{ log.user.short_name|default:"Tizim" }} · {{ log.created_at|date:"d.m.Y H:i" }}</div></li>
+          {% empty %}<li class="text-muted">Tarix bo‘sh</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

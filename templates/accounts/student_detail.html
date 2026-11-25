@@ -1,0 +1,119 @@
+{% extends "base.html" %}{% load bmi %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block page_title %}{% if is_self %}Mening profilim{% else %}Talaba profili{% endif %}{% endblock %}
+{% block content %}
+<div class="profile-hero mb-4">
+  <div class="d-flex align-items-center gap-4 flex-wrap position-relative">
+    <span class="avatar avatar-lg">{{ student.initials }}</span>
+    <div class="flex-grow-1">
+      <div class="small-caps" style="color:var(--gold)">Talaba</div>
+      <h2>{{ student.full_name }}</h2>
+      <div class="meta mt-1">{{ profile.direction|default:"Yo‘nalish ko‘rsatilmagan" }}</div>
+      <div class="d-flex gap-2 mt-2 flex-wrap">
+        <span class="chip"><i class="bi bi-person-vcard"></i>ID: {{ profile.student_id }}</span>
+        <span class="chip"><i class="bi bi-mortarboard"></i>{{ profile.course }}-kurs · {{ profile.group_name|default:"—" }}</span>
+        <span class="chip"><i class="bi bi-bank"></i>{{ student.faculty.name|default:"—" }}</span>
+        <span class="chip"><i class="bi bi-building"></i>{{ student.department.name|default:"Kafedra yo‘q" }}</span>
+      </div>
+    </div>
+    <div class="score-ring" style="--p: {% if works_score %}100{% else %}0{% endif %}">
+      <div><div class="v">{{ works_score|floatformat:1 }}</div><div class="l">Ilmiy ball</div></div>
+    </div>
+  </div>
+</div>
+
+{% if request.user.is_dekanat or request.user.is_kafedra %}
+<div class="page-actions justify-content-end">
+  <div class="d-flex gap-2">
+    {% if request.user.is_kafedra and not thesis %}<a href="{% url 'theses:create' %}?student={{ student.pk }}" class="btn btn-primary"><i class="bi bi-link-45deg me-1"></i>Mavzu va rahbar biriktirish</a>{% endif %}
+    {% if request.user.is_dekanat %}
+    <a href="{% url 'accounts:student_edit' student.pk %}" class="btn btn-light"><i class="bi bi-pencil me-1"></i>Tahrirlash</a>
+    <form method="post" action="{% url 'accounts:reset_password' student.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+      <button class="btn btn-light" data-confirm="Yangi parol yaratilsinmi?"><i class="bi bi-key me-1"></i>Parolni tiklash</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-xl-7" id="bmi">
+    <div class="card mb-4">
+      <div class="card-header justify-content-between"><span><i class="bi bi-journal-bookmark"></i> Bitiruv malakaviy ishi</span>
+        {% if thesis %}<span class="status status-{{ thesis.status }}">{{ thesis.get_status_display }}</span>{% endif %}</div>
+      <div class="card-body">
+        {% if thesis %}
+          <div class="small-caps mb-1">Mavzu</div>
+          <p class="fs-6 fw-600 mb-3" style="color:var(--navy-800)">{{ thesis.topic }}</p>
+          <div class="small-caps mb-2">Ilmiy rahbar</div>
+          {% if thesis.supervisor %}
+          <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-3" style="background:#f6f8fb">
+            <span class="avatar">{{ thesis.supervisor.initials }}</span>
+            <div class="flex-grow-1"><div class="fw-600">{{ thesis.supervisor.full_name }}</div>
+              <div class="small text-muted">{{ thesis.supervisor.teacher_profile.position }}{% if thesis.supervisor.teacher_profile.degree %}, {{ thesis.supervisor.teacher_profile.degree }}{% endif %}</div>
+              {% if thesis.supervisor.phone or thesis.supervisor.email %}<div class="small text-muted">{{ thesis.supervisor.phone }} {{ thesis.supervisor.email }}</div>{% endif %}</div>
+          </div>
+          {% endif %}
+
+          {% if thesis.status == 'approved' %}
+          <div class="doc-card d-flex align-items-center gap-3 flex-wrap">
+            <span class="seal"><i class="bi bi-patch-check-fill"></i></span>
+            <div class="flex-grow-1">
+              <div class="fw-bold" style="color:var(--navy-800)">Tasdiqlangan hujjat</div>
+              <div class="small text-muted">Tasdiqlangan: {{ thesis.approved_at|date:"d.m.Y H:i" }} · Tekshirish kodi: <strong>{{ thesis.short_code }}</strong></div>
+            </div>
+            <a href="{% url 'theses:document' thesis.pk %}" class="btn btn-gold"><i class="bi bi-download me-1"></i>Yuklab olish</a>
+          </div>
+          {% else %}
+          <div class="small-caps mb-2">Kelishuv jarayoni</div>
+          {% approval_steps thesis as steps %}
+          {% include "partials/approval_steps.html" %}
+          {% endif %}
+          {% if not request.user.is_student %}<a href="{% url 'theses:detail' thesis.pk %}" class="btn btn-light btn-sm mt-3">Batafsil <i class="bi bi-arrow-right"></i></a>{% endif %}
+        {% else %}
+          <div class="empty-state"><i class="bi bi-hourglass"></i>Diplom ishi mavzusi va ilmiy rahbar hali tasdiqlanmagan.<br><span class="small">Kafedra biriktirgach va kelishuv yakunlangach shu yerda ko‘rinadi.</span></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-person-lines-fill"></i> Shaxsiy ma’lumotlar</div>
+      <div class="card-body">
+        <dl class="info-list">
+          <dt>Talaba ID</dt><dd>{{ profile.student_id }}</dd>
+          <dt>Fakultet</dt><dd>{{ student.faculty.name|default:"—" }}</dd>
+          <dt>Bitiruvchi kafedra</dt><dd>{{ student.department.name|default:"—" }}</dd>
+          <dt>Yo‘nalish</dt><dd>{{ profile.direction|default:"—" }}</dd>
+          <dt>Kurs / guruh</dt><dd>{{ profile.course }}-kurs · {{ profile.group_name|default:"—" }}</dd>
+          <dt>Ta’lim shakli</dt><dd>{{ profile.get_education_form_display }}</dd>
+          <dt>Telefon</dt><dd>{{ student.phone|default:"—" }}</dd>
+        </dl>
+        {% if is_self %}<a href="{% url 'accounts:edit_contacts' %}" class="btn btn-light btn-sm mt-3"><i class="bi bi-pencil me-1"></i>Aloqa ma’lumotlarini yangilash</a>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-award"></i> {% if request.user.is_student %}Tasdiqlangan ilmiy ishlarim va ballarim{% else %}Ilmiy ishlar (hammualliflikda){% endif %}</div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Nomi</th><th>Turi</th><th>Darajasi</th><th>Ilmiy rahbar</th><th>Nashr</th><th>Holati</th><th class="text-end">Ball</th></tr></thead>
+        <tbody>
+        {% for w in works %}
+          <tr>
+            <td><a href="{% url 'research:detail' w.pk %}" class="fw-600">{{ w.title|truncatechars:90 }}</a></td>
+            <td class="small">{{ w.get_work_type_display }}</td>
+            <td class="small">{{ w.get_level_display }}</td>
+            <td class="small">{{ w.teacher.short_name }}</td>
+            <td class="small">{{ w.publication|truncatechars:50 }}{% if w.publication_date %}<br><span class="text-muted">{{ w.publication_date|date:"d.m.Y" }}</span>{% endif %}</td>
+            <td><span class="status status-{{ w.status }}">{{ w.get_status_display }}</span></td>
+            <td class="text-end fw-bold" style="color:var(--navy-800)">{% if w.final_score is not None %}{{ w.final_score }}{% else %}—{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7"><div class="empty-state"><i class="bi bi-journal"></i>Tasdiqlangan ilmiy ishlar hozircha yo‘q</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

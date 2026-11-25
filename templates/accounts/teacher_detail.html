@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}{{ teacher.full_name }}{% endblock %}
+{% block page_title %}{% if is_self %}Mening profilim{% else %}O‘qituvchi profili{% endif %}{% endblock %}
+{% block content %}
+<div class="profile-hero mb-4">
+  <div class="d-flex align-items-center gap-4 flex-wrap position-relative">
+    <span class="avatar avatar-lg">{{ teacher.initials }}</span>
+    <div class="flex-grow-1">
+      <div class="small-caps" style="color:var(--gold)">O‘qituvchi</div>
+      <h2>{{ teacher.full_name }}</h2>
+      <div class="meta mt-1">{{ profile.position|default:"Lavozim ko‘rsatilmagan" }}{% if profile.degree %} · {{ profile.degree }}{% endif %}{% if profile.academic_title %} · {{ profile.academic_title }}{% endif %}</div>
+      <div class="d-flex gap-2 mt-2 flex-wrap">
+        <span class="chip"><i class="bi bi-building"></i>{{ teacher.department.name|default:"Kafedra yo‘q" }}</span>
+        {% if teacher.phone %}<span class="chip"><i class="bi bi-telephone"></i>{{ teacher.phone }}</span>{% endif %}
+        {% if teacher.email %}<span class="chip"><i class="bi bi-envelope"></i>{{ teacher.email }}</span>{% endif %}
+        {% if rank %}<span class="chip"><i class="bi bi-trophy"></i>Kafedra reytingi: {{ rank }}/{{ rank_total }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="score-ring" style="--p: {{ avg_pct }}" title="Tasdiqlangan ishlar bo‘yicha o‘rtacha ball: {{ avg_pct }}">
+      <div><div class="v">{{ total_score|floatformat:1 }}</div><div class="l">Umumiy ball</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-actions">
+  <div class="d-flex gap-2 flex-wrap">
+    {% if is_self %}<a href="{% url 'research:create' %}" class="btn btn-primary"><i class="bi bi-cloud-arrow-up me-1"></i>Ilmiy ish yuklash</a>{% endif %}
+    <a href="{% url 'accounts:teacher_report' teacher.pk %}" class="btn btn-gold"><i class="bi bi-file-earmark-word me-1"></i>Ilmiy faoliyat ma’lumotnomasi</a>
+    {% if is_self %}<a href="{% url 'accounts:edit_contacts' %}" class="btn btn-light"><i class="bi bi-pencil me-1"></i>Aloqa ma’lumotlari</a>{% endif %}
+  </div>
+  {% if request.user.is_kafedra %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'accounts:teacher_edit' teacher.pk %}" class="btn btn-light"><i class="bi bi-pencil me-1"></i>Tahrirlash</a>
+    <form method="post" action="{% url 'accounts:reset_password' teacher.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+      <button class="btn btn-light" data-confirm="Yangi parol yaratilsinmi?"><i class="bi bi-key me-1"></i>Parolni tiklash</button></form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3"><div class="stat-card tone-navy"><div class="stat-icon"><i class="bi bi-people"></i></div><div class="stat-value">{{ theses|length }}</div><div class="stat-label">Biriktirilgan talabalar{% if profile %} (me’yor: {{ profile.max_students }}){% endif %}</div></div></div>
+  <div class="col-6 col-xl-3"><div class="stat-card tone-green"><div class="stat-icon"><i class="bi bi-patch-check"></i></div><div class="stat-value">{{ approved_count }}</div><div class="stat-label">Tasdiqlangan ilmiy ishlar</div></div></div>
+  <div class="col-6 col-xl-3"><div class="stat-card tone-amber"><div class="stat-icon"><i class="bi bi-hourglass-split"></i></div><div class="stat-value">{{ pending_count }}</div><div class="stat-label">Baholash jarayonida</div></div></div>
+  <div class="col-6 col-xl-3"><div class="stat-card tone-gold"><div class="stat-icon"><i class="bi bi-award"></i></div><div class="stat-value">{{ total_score|floatformat:2 }}</div><div class="stat-label">Markazlashgan umumiy ball</div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-xl-8">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-people"></i> Ilmiy rahbarligimdagi talabalar</div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Talaba</th><th>Guruh</th><th>BMI mavzusi</th><th>Holati</th><th></th></tr></thead>
+        <tbody>
+        {% for t in theses %}
+          <tr>
+            <td><a href="{% url 'accounts:student_detail' t.student_id %}" class="fw-600">{{ t.student.full_name }}</a><div class="small text-muted">{{ t.student.student_profile.direction|default:"" }}</div></td>
+            <td class="small nowrap">{{ t.student.student_profile.course }}-kurs<br><span class="text-muted">{{ t.student.student_profile.group_name }}</span></td>
+            <td class="small topic">{{ t.topic|truncatechars:110 }}</td>
+            <td><span class="status status-{{ t.status }}">{{ t.get_status_display }}</span></td>
+            <td class="text-end text-nowrap">
+              {% if t.status == 'approved' %}<a href="{% url 'theses:document' t.pk %}" class="btn btn-sm btn-light" title="Tasdiqlangan hujjat"><i class="bi bi-file-earmark-check"></i></a>{% endif %}
+              <a href="{% url 'theses:detail' t.pk %}" class="btn btn-sm btn-light"><i class="bi bi-eye"></i></a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5"><div class="empty-state"><i class="bi bi-person-x"></i>Hozircha talabalar biriktirilmagan</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-journal-richtext"></i> Ilmiy ishlar (talabalar bilan hammualliflikda)</div>
+      <div class="table-responsive"><table class="table table-hover">
+        <thead><tr><th>Nomi</th><th>Turi / darajasi</th><th>Talabalar</th><th>Holati</th><th class="text-end">Ball</th></tr></thead>
+        <tbody>
+        {% for w in works %}
+          <tr>
+            <td><a href="{% url 'research:detail' w.pk %}" class="fw-600">{{ w.title|truncatechars:80 }}</a><div class="small text-muted">{{ w.publication|truncatechars:60 }}{% if w.publication_date %} · {{ w.publication_date|date:"d.m.Y" }}{% endif %}</div></td>
+            <td class="small">{{ w.get_work_type_display }}<br><span class="text-muted">{{ w.get_level_display }}</span></td>
+            <td class="small">{% for s in w.students.all %}{{ s.short_name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+            <td><span class="status status-{{ w.status }}">{{ w.get_status_display }}</span><div class="small text-muted mt-1">{{ w.evaluations.all|length }}/3 baho</div></td>
+            <td class="text-end fw-bold">{% if w.final_score is not None %}{{ w.final_score }}{% else %}—{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5"><div class="empty-state"><i class="bi bi-journal"></i>Ilmiy ishlar yuklanmagan</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-pie-chart"></i> Ish turlari bo‘yicha ball</div>
+      <div class="card-body">
+        {% for name, v in by_type %}
+          <div class="d-flex justify-content-between small mb-1"><span>{{ name }} <span class="text-muted">({{ v.0 }} ta)</span></span><strong>{{ v.1|floatformat:1 }}</strong></div>
+          <div class="progress mb-3"><div class="progress-bar" style="width: {% widthratio v.1 total_score 100 %}%"></div></div>
+        {% empty %}
+          <div class="text-muted small">Tasdiqlangan ishlar hali yo‘q.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-info-circle"></i> Ma’lumotlar</div>
+      <div class="card-body">
+        <dl class="info-list">
+          <dt>Login</dt><dd>{{ teacher.username }}</dd>
+          <dt>Fakultet</dt><dd>{{ teacher.department.faculty.name|default:"—" }}</dd>
+          <dt>Kafedra</dt><dd>{{ teacher.department.name|default:"—" }}</dd>
+          <dt>Lavozim</dt><dd>{{ profile.position|default:"—" }}</dd>
+          <dt>Ilmiy daraja</dt><dd>{{ profile.degree|default:"—" }}</dd>
+          <dt>Ilmiy unvon</dt><dd>{{ profile.academic_title|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

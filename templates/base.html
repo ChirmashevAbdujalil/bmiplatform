@@ -1,0 +1,155 @@
+{% load static %}<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ PLATFORM_NAME }}{% endblock %} · {{ PLATFORM_NAME }}</title>
+  <link href="{% static 'vendor/inter/inter.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/main.css' %}" rel="stylesheet">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% block body %}
+{% with ns=request.resolver_match.namespace un=request.resolver_match.url_name u=request.user %}
+<aside class="sidebar" id="sidebar">
+  <a href="{% url 'core:dashboard' %}" class="brand">
+    <span class="brand-emblem"><i class="bi bi-mortarboard-fill"></i></span>
+    <span>
+      <span class="brand-title d-block">{{ PLATFORM_NAME }}</span>
+      <span class="brand-sub d-block">Bitiruv malakaviy ishlari va ilmiy faoliyat</span>
+    </span>
+  </a>
+  <nav>
+    <div class="nav-section">Asosiy</div>
+    {% if u.is_teacher or u.is_student %}
+      <a class="nav-link {% if un == 'teacher_detail' or un == 'student_detail' %}active{% endif %}" href="{% url 'accounts:my_profile' %}"><i class="bi bi-person-badge"></i> Mening profilim</a>
+    {% else %}
+      <a class="nav-link {% if ns == 'core' and un == 'dashboard' %}active{% endif %}" href="{% url 'core:dashboard' %}"><i class="bi bi-grid-1x2"></i> Bosh sahifa</a>
+    {% endif %}
+
+    {% if u.is_manager %}
+      <div class="nav-section">Kontingent</div>
+      <a class="nav-link {% if un == 'teacher_list' or un == 'teacher_create' or un == 'teacher_edit' %}active{% endif %}" href="{% url 'accounts:teacher_list' %}"><i class="bi bi-person-video3"></i> O‘qituvchilar</a>
+      <a class="nav-link {% if un == 'student_list' or un == 'student_create' or un == 'student_edit' %}active{% endif %}" href="{% url 'accounts:student_list' %}"><i class="bi bi-people"></i> Talabalar</a>
+      {% if u.is_kafedra %}
+        <a class="nav-link {% if un == 'teacher_import' %}active{% endif %}" href="{% url 'accounts:teacher_import' %}"><i class="bi bi-file-earmark-word"></i> O‘qituvchilar importi</a>
+      {% endif %}
+      {% if u.is_dekanat %}
+        <a class="nav-link {% if un == 'student_import' %}active{% endif %}" href="{% url 'accounts:student_import' %}"><i class="bi bi-file-earmark-word"></i> Talabalar importi</a>
+      {% endif %}
+    {% endif %}
+
+    <div class="nav-section">Bitiruv ishlari</div>
+    {% if u.is_student %}
+      <a class="nav-link" href="{% url 'accounts:student_detail' u.pk %}#bmi"><i class="bi bi-journal-bookmark"></i> Mavzu va rahbarim</a>
+    {% else %}
+      <a class="nav-link {% if ns == 'theses' and un != 'import' %}active{% endif %}" href="{% url 'theses:list' %}">
+        <i class="bi bi-journal-check"></i> {% if u.is_teacher %}Talabalarim{% elif u.is_kafedra %}BMI mavzulari{% else %}BMI kelishuvi{% endif %}
+        {% if badges.theses %}<span class="badge rounded-pill">{{ badges.theses }}</span>{% endif %}
+      </a>
+      {% if u.is_kafedra %}
+        <a class="nav-link {% if ns == 'theses' and un == 'import' %}active{% endif %}" href="{% url 'theses:import' %}"><i class="bi bi-file-earmark-arrow-up"></i> BMI importi (Word)</a>
+      {% endif %}
+    {% endif %}
+
+    <div class="nav-section">Ilmiy faoliyat</div>
+    <a class="nav-link {% if ns == 'research' and un != 'criteria' and un != 'criterion_edit' and un != 'create' %}active{% endif %}" href="{% url 'research:list' %}">
+      <i class="bi bi-journal-richtext"></i> {% if u.is_teacher or u.is_student %}Ilmiy ishlarim{% else %}Ilmiy ishlarni baholash{% endif %}
+      {% if badges.works %}<span class="badge rounded-pill">{{ badges.works }}</span>{% endif %}
+    </a>
+    {% if u.is_teacher %}
+      <a class="nav-link {% if ns == 'research' and un == 'create' %}active{% endif %}" href="{% url 'research:create' %}"><i class="bi bi-cloud-arrow-up"></i> Ilmiy ish yuklash</a>
+    {% endif %}
+    {% if u.is_sifat or u.is_admin_role %}
+      <a class="nav-link {% if un == 'criteria' or un == 'criterion_edit' %}active{% endif %}" href="{% url 'research:criteria' %}"><i class="bi bi-sliders"></i> Baholash mezonlari</a>
+    {% endif %}
+    {% if u.is_manager %}
+      <a class="nav-link {% if un == 'statistics' %}active{% endif %}" href="{% url 'core:statistics' %}"><i class="bi bi-bar-chart-line"></i> Statistika</a>
+    {% endif %}
+
+    {% if u.is_admin_role or u.is_sifat %}
+      <div class="nav-section">Tizim</div>
+      {% if u.is_admin_role %}
+        <a class="nav-link {% if un == 'structure' %}active{% endif %}" href="{% url 'core:structure' %}"><i class="bi bi-diagram-3"></i> Tuzilma</a>
+        <a class="nav-link {% if un == 'staff' %}active{% endif %}" href="{% url 'core:staff' %}"><i class="bi bi-shield-lock"></i> Boshqaruv hisoblari</a>
+      {% endif %}
+      <a class="nav-link {% if un == 'audit' %}active{% endif %}" href="{% url 'core:audit' %}"><i class="bi bi-clock-history"></i> Harakatlar jurnali</a>
+      {% if u.is_superuser %}
+        <a class="nav-link" href="{% url 'admin:index' %}"><i class="bi bi-gear"></i> Admin panel</a>
+      {% endif %}
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer">{{ UNIVERSITY_NAME }}<br>© {% now "Y" %} · {{ PLATFORM_NAME }}</div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="icon-btn d-lg-none" type="button" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menyu"><i class="bi bi-list"></i></button>
+    <div class="me-auto">
+      <div class="crumb">{% block crumb %}{{ u.get_role_display }}{% if u.unit_name %} · {{ u.unit_name }}{% endif %}{% endblock %}</div>
+      <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+    </div>
+
+    <div class="dropdown">
+      <button class="icon-btn" data-bs-toggle="dropdown" aria-label="Bildirishnomalar">
+        <i class="bi bi-bell"></i>{% if unread_count %}<span class="dot">{{ unread_count }}</span>{% endif %}
+      </button>
+      <div class="dropdown-menu dropdown-menu-end dropdown-notifs">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+          <strong class="small">Bildirishnomalar</strong>
+          {% if unread_count %}
+          <form method="post" action="{% url 'core:notifications_read_all' %}">{% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button class="btn btn-link btn-sm p-0">Barchasini o‘qildi</button>
+          </form>
+          {% endif %}
+        </div>
+        {% for n in latest_notifications %}
+          {% include "partials/notification_item.html" %}
+        {% empty %}
+          <div class="empty-state py-4"><i class="bi bi-bell-slash"></i>Bildirishnomalar yo‘q</div>
+        {% endfor %}
+        <a href="{% url 'core:notifications' %}" class="d-block text-center small py-2 border-top fw-600">Barchasini ko‘rish</a>
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <button class="btn btn-light d-flex align-items-center gap-2 py-1 ps-1 pe-2" data-bs-toggle="dropdown">
+        <span class="avatar">{{ u.initials }}</span>
+        <span class="text-start d-none d-md-block lh-sm">
+          <span class="d-block fw-600 small">{{ u.short_name }}</span>
+          <span class="d-block text-muted" style="font-size:.7rem">{{ u.get_role_display }}</span>
+        </span>
+        <i class="bi bi-chevron-down small text-muted"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+        <li><a class="dropdown-item" href="{% url 'accounts:my_profile' %}"><i class="bi bi-person me-2"></i>Profil</a></li>
+        <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}"><i class="bi bi-key me-2"></i>Parolni almashtirish</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+            <button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Chiqish</button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="content">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer d-flex justify-content-between flex-wrap gap-2">
+    <span>{{ UNIVERSITY_NAME }} · {{ PLATFORM_NAME }}</span>
+    <span>Bitiruv malakaviy ishlari va ilmiy faoliyatni raqamlashtirish tizimi</span>
+  </footer>
+</div>
+{% endwith %}
+{% endblock %}
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/main.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

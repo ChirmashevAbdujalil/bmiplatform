@@ -1,0 +1,20 @@
+<div class="approval-step">
+  <span class="step-icon {% if thesis.sent_at %}step-done{% else %}step-none{% endif %}"><i class="bi bi-building"></i></span>
+  <div class="flex-grow-1"><div class="fw-600">Kafedra</div>
+    {% if thesis.sent_at %}<div class="small text-muted">{{ thesis.sent_by.full_name }} · {{ thesis.sent_at|date:"d.m.Y H:i" }}</div><div class="small text-success">Kelishuvga yuborildi</div>
+    {% else %}<div class="small text-muted">Hali yuborilmagan</div>{% endif %}
+  </div>
+</div>
+{% for label, decision, by, at, comment in steps %}
+<div class="approval-step">
+  <span class="step-icon {% if decision == 'approved' %}step-done{% elif decision == 'returned' %}step-back{% elif thesis.status == 'pending' %}step-wait{% else %}step-none{% endif %}">
+    <i class="bi {% if decision == 'approved' %}bi-check2{% elif decision == 'returned' %}bi-arrow-counterclockwise{% else %}bi-hourglass-split{% endif %}"></i></span>
+  <div class="flex-grow-1"><div class="fw-600">{{ label }}</div>
+    {% if decision %}<div class="small text-muted">{{ by.full_name }} · {{ at|date:"d.m.Y H:i" }}</div>
+      <div class="small {% if decision == 'approved' %}text-success{% else %}text-danger{% endif %}">{% if decision == 'approved' %}Kelishildi{% else %}Qaytarildi{% endif %}</div>
+      {% if comment %}<div class="small mt-1 p-2 rounded-2" style="background:#f6f8fb">“{{ comment }}”</div>{% endif %}
+    {% elif thesis.status == 'pending' %}<div class="small text-warning">Ko‘rib chiqilmoqda</div>
+    {% else %}<div class="small text-muted">—</div>{% endif %}
+  </div>
+</div>
+{% endfor %}

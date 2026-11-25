@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Boshqaruv hisoblari{% endblock %}
+{% block page_title %}Boshqaruv hisoblari{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-xl-8"><div class="card"><div class="card-header"><i class="bi bi-shield-lock"></i> Kafedra, dekanat va ta’lim sifati bo‘limi hisoblari</div>
+    <div class="table-responsive"><table class="table table-hover">
+      <thead><tr><th>F.I.Sh.</th><th>Login</th><th>Rol</th><th>Bo‘linma</th><th>Holat</th><th></th></tr></thead>
+      <tbody>{% for s in staff %}<tr>
+        <td class="fw-600 small">{{ s.full_name|default:"—" }}</td><td><code>{{ s.username }}</code></td><td class="small">{{ s.get_role_display }}</td>
+        <td class="small">{{ s.unit_name|default:"—" }}</td>
+        <td>{% if s.is_active %}<span class="status status-approved">Faol</span>{% else %}<span class="status status-returned">Bloklangan</span>{% endif %}</td>
+        <td class="text-end text-nowrap">
+          <form method="post" action="{% url 'core:staff_reset' s.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-light" title="Parolni tiklash" data-confirm="Yangi parol yaratilsinmi?"><i class="bi bi-key"></i></button></form>
+          <form method="post" action="{% url 'core:staff_toggle' s.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-light" title="Bloklash / faollashtirish"><i class="bi bi-power"></i></button></form>
+        </td></tr>
+      {% empty %}<tr><td colspan="6"><div class="empty-state">Hisoblar yo‘q</div></td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+  <div class="col-xl-4"><div class="card"><div class="card-header"><i class="bi bi-person-plus"></i> Yangi hisob</div><div class="card-body">
+    <form method="post">{% csrf_token %}{% include "partials/form_fields.html" with wide_fields="role username faculty department" %}
+      <div class="form-text">Kafedra roli uchun kafedra, dekanat roli uchun fakultet tanlanishi shart.</div>
+      <button class="btn btn-primary mt-3">Yaratish</button></form></div></div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load bmi %}
+{% block title %}O‘qituvchilar{% endblock %}
+{% block page_title %}O‘qituvchilar{% endblock %}
+{% block content %}
+<div class="page-actions">
+  <div class="status-tabs mb-0">
+    <a href="{% qs order='' page='' %}" class="{% if order != 'score' %}active{% endif %}"><i class="bi bi-sort-alpha-down"></i> Alifbo bo‘yicha</a>
+    <a href="{% qs order='score' page='' %}" class="{% if order == 'score' %}active{% endif %}"><i class="bi bi-trophy"></i> Reyting bo‘yicha</a>
+  </div>
+  {% if request.user.is_kafedra %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'accounts:teacher_import' %}" class="btn btn-gold"><i class="bi bi-file-earmark-word me-1"></i>Word’dan import</a>
+    <a href="{% url 'accounts:teacher_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Qo‘shish</a>
+  </div>
+  {% endif %}
+</div>
+<form class="filter-bar" method="get">
+  <input type="hidden" name="order" value="{{ order }}">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-4 col-xl-3"><label class="form-label">Qidiruv</label>
+      <input name="q" value="{{ request.GET.q }}" class="form-control form-control-sm" placeholder="F.I.Sh. yoki login"></div>
+    {% include "partials/structure_filters.html" with no_direction=True %}
+    <div class="col-auto"><button class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filtrlash</button>
+      <a href="?" class="btn btn-light btn-sm">Tozalash</a></div>
+  </div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>#</th><th>O‘qituvchi</th><th>Kafedra</th><th>Lavozim / daraja</th><th class="text-center">Talabalar</th><th class="text-center">Tasdiqlangan ishlar</th><th class="text-center">Baholashda</th><th class="text-end">Umumiy ball</th></tr></thead>
+      <tbody>
+      {% for t in page %}
+        <tr>
+          <td><span class="rank-badge {% if order == 'score' and page.number == 1 and forloop.counter <= 3 %}rank-{{ forloop.counter }}{% endif %}">{{ page.start_index|add:forloop.counter0 }}</span></td>
+          <td><a href="{% url 'accounts:teacher_detail' t.pk %}" class="d-flex align-items-center gap-2 text-reset">
+            <span class="avatar">{{ t.initials }}</span><span><span class="fw-600 d-block">{{ t.full_name }}</span><span class="small text-muted">{{ t.username }}</span></span></a></td>
+          <td class="small">{{ t.department.name|default:"—" }}</td>
+          <td class="small">{{ t.teacher_profile.position|default:"—" }}{% if t.teacher_profile.degree %}<br><span class="text-muted">{{ t.teacher_profile.degree }}</span>{% endif %}</td>
+          <td class="text-center">{{ t.students_count }}</td>
+          <td class="text-center">{{ t.works_count }}</td>
+          <td class="text-center">{% if t.pending_count %}<span class="status status-pending">{{ t.pending_count }}</span>{% else %}—{% endif %}</td>
+          <td class="text-end fw-bold" style="color:var(--navy-800)">{{ t.total_score|floatformat:2 }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="empty-state"><i class="bi bi-person-video3"></i>O‘qituvchilar topilmadi{% if request.user.is_kafedra %}. Word fayl orqali import qiling.{% endif %}</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}
